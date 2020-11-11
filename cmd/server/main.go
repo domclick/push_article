@@ -49,6 +49,10 @@ func main() {
 	mux.Mount("/", http.FileServer(http.Dir(filepath.Join(projectRoot, "statics"))))
 	mux.Mount("/api/v1/users", chi.NewMux().Group((&routes.UserService{}).AddToRouter))
 	mux.Mount("/api/v1/tokens", chi.NewMux().Group((&routes.TokenService{Storage: tokenStorage}).AddToRouter))
+	mux.Mount("/api/v1/topics", chi.NewMux().Group((&routes.TopicService{
+		Storage: tokenStorage,
+		Client:  fbMessaging,
+	}).AddToRouter))
 	mux.Mount("/api/v1/notifications", chi.NewMux().Group((&routes.NotificationService{
 		Storage: tokenStorage,
 		Client:  fbMessaging,

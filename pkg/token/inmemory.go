@@ -54,12 +54,12 @@ func (ms *MemoryStorage) deleteTokenFromUser(token string, userID uint64) {
 	ms.userTokens[userID] = ut
 }
 
-func (ms *MemoryStorage) UserTokens(ctx context.Context, userID uint64) ([]Token, error) {
+func (ms *MemoryStorage) UserTokens(ctx context.Context, userID uint64) (Tokens, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
 	tokens := ms.userTokens[userID]
-	ret := make([]Token, len(tokens))
+	ret := make(Tokens, len(tokens))
 	copy(ret, tokens)
 
 	return ret, nil

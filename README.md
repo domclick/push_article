@@ -8,6 +8,10 @@ Project contains following endpoints:
 * `POST /api/v1/users/logout` - logout user and unset cookie
 * `POST /api/v1/users/me` - get current authorized user
 * `POST /api/v1/tokens` - save token for authorized user
+* `POST /api/v1/topics/subscribe` - subscribe user to fcm topic
+* `POST /api/v1/topics/unsubscribe` - unsubscribe user to topic
+* `POST /api/v1/notifications` - send notification to user (to all tokens)
+* `POST /api/v1/notifications/topic` - send notification to topic(s)`
 * `GET /api/v1/tokens?user_id=<user_id>` - get push-tokens for user
 and static content:
 `simple_example.html` - page that only gets your FCM push-token and displays it.
@@ -41,4 +45,17 @@ After successful start program displays a listen address which can be opened fro
 Push to authorized user (`user_example.html`) can be sent using command like
 ```bash
 curl http://<listen-addr>/api/v1/notifications -d '{"user_id": 1235, "notification":{"title": "hello", "body": "world"}}'
+```
+
+Push to topic can be sent using command like
+```bash
+curl http://<listen-addr>/api/v1/notifications/topics -d '{"topic": "test_topic", "notification":{"title": "hello", "body": "world"}}'
+```
+`condition` can be used to send push to multiple topics.
+[Condition syntax reference](https://firebase.google.com/docs/cloud-messaging/send-message#send-messages-to-topics)
+
+
+To use topics for web-pushes user must be subscribed to topic from server:
+```bash
+curl http://<listen-addr>/api/v1/topics/subscribe -d '{"user_id": <user_id>, "topic": <topic_name>}'
 ```

@@ -41,13 +41,8 @@ func (ns *NotificationService) sendNotification(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	tokenStrings := make([]string, len(tokens))
-	for i, t := range tokens {
-		tokenStrings[i] = t.Token
-	}
-
 	resp, err := ns.SendMulticast(r.Context(), &messaging.MulticastMessage{
-		Tokens:       tokenStrings,
+		Tokens:       tokens.Values(),
 		Data:         request.Data,
 		Notification: request.Notification,
 		Android:      request.Android,
@@ -63,8 +58,8 @@ func (ns *NotificationService) sendNotification(w http.ResponseWriter, r *http.R
 		// we should clean up unregistered tokens
 		var unregisteredTokens []string
 		for i, item := range resp.Responses {
-			if messaging.IsRegistrationTokenNotRegistered(item.Error) {
-				unregisteredTokens = append(unregisteredTokens, tokenStrings[i])
+			if messaging.IsUnregistered(item.Error) {
+				unregisteredTokens = append(unregisteredTokens, tokens[i].Token)
 			}
 		}
 
@@ -77,6 +72,39 @@ func (ns *NotificationService) sendNotification(w http.ResponseWriter, r *http.R
 	}()
 }
 
+func (ns *NotificationService) sendNotificationToTopic(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var request struct {
+		Topic        string                   `json:"topic"`
+		Condition    string                   `json:"condition"`
+		Data         map[string]string        `json:"data"`
+		Notification *messaging.Notification  `json:"notification"`
+		Android      *messaging.AndroidConfig `json:"android"`
+		Webpush      *messaging.WebpushConfig `json:"webpush"`
+		APNS         *messaging.APNSConfig    `json:"apns"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, "bad json: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err = ns.Send(r.Context(), &messaging.Message{
+		Topic:        request.Topic,
+		Data:         request.Data,
+		Notification: request.Notification,
+		Android:      request.Android,
+		Webpush:      request.Webpush,
+		APNS:         request.APNS,
+	})
+	if err != nil {
+		http.Error(w, "send notifications failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (ns *NotificationService) confirm(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -85,5 +113,6 @@ func (ns *NotificationService) confirm(w http.ResponseWriter, r *http.Request) {
 
 func (ns *NotificationService) AddToRouter(r chi.Router) {
 	r.Post("/", ns.sendNotification)
+	r.Post("/topic", ns.sendNotificationToTopic)
 	r.Post("/{id}/confirm", ns.confirm)
 }
